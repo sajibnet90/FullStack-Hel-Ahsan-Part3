@@ -1,3 +1,4 @@
+//this file mongo.js tests purpose database connenction and taking password as command line argument
 const mongoose = require('mongoose');
 
 // Get command line arguments
