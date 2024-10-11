@@ -1,47 +1,46 @@
-const express = require('express');
-const morgan = require('morgan');
-const cors = require('cors');
+const express = require('express')
+const morgan = require('morgan')
+const cors = require('cors')
 require('dotenv').config()
 const Person = require('./models/person')
-const app = express();
+const app = express()
 
 //serving the static frontend build
 app.use(express.static('dist'))
 
 
-app.use(express.json());
-app.use(cors());
+app.use(express.json())
+app.use(cors())
 
 //---------------------custom middlewares-----------------------------------------
 
 const requestLogger = (request, response, next) => {
-    console.log('Method:', request.method)
-    console.log('Path:  ', request.path)
-    console.log('Body:  ', request.body)
-    console.log('---')
-    next()
+  console.log('Method:', request.method)
+  console.log('Path:  ', request.path)
+  console.log('Body:  ', request.body)
+  console.log('---')
+  next()
+}
+
+app.use(requestLogger)//using request logger middleware
+//-------Custom Error Handler for CastError, Validation Errors
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
   }
-  
-  app.use(requestLogger)//using request logger middleware
-  
-  //-------Custom Error Handler for CastError, Validation Errors
-  const errorHandler = (error, request, response, next) => {
-    console.error(error.message)
-  
-    if (error.name === 'CastError') {
-      return response.status(400).send({ error: 'malformatted id' })
-    } else if (error.name === 'ValidationError') {
-      return response.status(400).json({ error: error.message })
-    }
-    next(error)
-  }
-  
-  //------
-  const unknownEndpoint = (request, response) => {
-    response.status(404).send({ error: 'unknown endpoint' })
-  }
-  
-  
+  next(error)
+}
+
+//------
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
+
+
 // let persons = [
 //     { id: "1", name: "Arto Hellas", number: "040-123456" },
 //     { id: "2", name: "Ada Lovelace", number: "39-44-5323523" },
@@ -55,8 +54,8 @@ const requestLogger = (request, response, next) => {
 
 // Custom token to log request body in POST requests
 morgan.token('post-body', (req) => {
-    return req.method === 'POST' ? JSON.stringify(req.body) : '';
-});
+  return req.method === 'POST' ? JSON.stringify(req.body) : ''
+})
 // Use morgan with a custom format
 app.use(morgan(':method :url :status :post-body'))
 
@@ -77,23 +76,23 @@ app.use(morgan(':method :url :status :post-body'))
 // });
 
 app.get('/api/persons', (request, response) => {
-    Person.find({}).then(persons => {
-      response.json(persons);
-    });
-  });
-  
+  Person.find({}).then(persons => {
+    response.json(persons)
+  })
+})
+
 //############################## GET /info ########
 
 // GET /info
 app.get('/info', (request, response) => {
-    Person.countDocuments({}).then(count => {
-      const time = new Date();
-      response.send(
-        `<p>Phonebook has info for ${count} people</p>
-         <p>${time}</p>`
-      );
-    });
-});
+  Person.countDocuments({}).then(count => {
+    const time = new Date()
+    response.send(
+      `<p>Phonebook has info for ${count} people</p>
+        <p>${time}</p>`
+    )
+  })
+})
 
 // app.get('/info', (req, res) => {
 //     const totalPersons = persons.length;
@@ -108,16 +107,16 @@ app.get('/info', (request, response) => {
 //##################### GET by id ###############
 
 app.get('/api/persons/:id', (request, response, next) => {
-    Person.findById(request.params.id)
+  Person.findById(request.params.id)
     .then(person => {
-        if(person) {
-            response.json(person)
-        } else {
-            response.status(404).end()
-        }
+      if(person) {
+        response.json(person)
+      } else {
+        response.status(404).end()
+      }
     })
     .catch(error => next(error))
-  })
+})
 
 // app.get('/api/persons/:id', (req, res) => {
 //     const id = req.params.id;
@@ -132,16 +131,16 @@ app.get('/api/persons/:id', (request, response, next) => {
 
 //##################### DELETE by id ###################
 app.delete('/api/persons/:id', (request, response, next) => {
-    Person.findByIdAndDelete(request.params.id)
-      .then(result => {
-        if (result) {
-          response.status(200).json({ message: `Person with id ${request.params.id} was successfully deleted` });
-        } else {
-          response.status(404).send({ error: 'Person not found' });
-        }
-      })
-      .catch(error => next(error)); // Pass errors to error handler
-});
+  Person.findByIdAndDelete(request.params.id)
+    .then(result => {
+      if (result) {
+        response.status(200).json({ message: `Person with id ${request.params.id} was successfully deleted` })
+      } else {
+        response.status(404).send({ error: 'Person not found' })
+      }
+    })
+    .catch(error => next(error)) // Pass errors to error handler
+})
 
 
 // app.delete('/api/persons/:id', (req, res) => {
@@ -159,52 +158,50 @@ app.delete('/api/persons/:id', (request, response, next) => {
 //######################### PUT update #########################################################
 
 app.put('/api/persons/:id', (request, response, next) => {
-    const { name, number } = request.body;
-  
-    // Check that the request includes both name and number
-    if (!name || !number) {
-      return response.status(400).json({ error: 'Name or number missing' });
-    }
-  
-    Person.findByIdAndUpdate(
-      request.params.id,
-      { name, number },
-      { new: true, runValidators: true, context: 'query' } 
-    )
-      .then(updatedPerson => {
-        if (updatedPerson) {
-          response.json(updatedPerson);
-        } else {
-          response.status(404).json({ error: 'Person not found' });
-        }
-      })
-      .catch(error => next(error)); 
-  });
-  
-  
+  const { name, number } = request.body
+
+  // Check that the request includes both name and number
+  if (!name || !number) {
+    return response.status(400).json({ error: 'Name or number missing' })
+  }
+
+  Person.findByIdAndUpdate(
+    request.params.id,
+    { name, number },
+    { new: true, runValidators: true, context: 'query' }
+  )
+    .then(updatedPerson => {
+      if (updatedPerson) {
+        response.json(updatedPerson)
+      } else {
+        response.status(404).json({ error: 'Person not found' })
+      }
+    })
+    .catch(error => next(error))
+})
+
 
 //#################### POST to Mongo###############
 
 app.post('/api/persons', (request, response, next) => {
-    const { name, number } = request.body;
-  
-    // Basic validation for name and number
-    if (!name || !number) {
-      return response.status(400).json({ error: 'name or number missing' });
-    }
-    const person = new Person({
-      name,
-      number,
-    });
-  
-    person.save().then(savedPerson => {
-        response.json(savedPerson);
-      })
-      .catch(error => {
-        next(error); 
-      });
-  });
-  
+  const { name, number } = request.body
+
+  // Basic validation for name and number
+  if (!name || !number) {
+    return response.status(400).json({ error: 'name or number missing' })
+  }
+  const person = new Person({
+    name,
+    number,
+  })
+
+  person.save().then(savedPerson => {
+    response.json(savedPerson)
+  })
+    .catch(error => {
+      next(error)
+    })
+})
 
 
 // app.post('/api/persons', (req, res) => {
