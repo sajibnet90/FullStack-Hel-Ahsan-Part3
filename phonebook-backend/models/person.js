@@ -12,10 +12,25 @@ mongoose.connect(url).then(result => {
     console.log('error connecting to MongoDB:', error.message)
   })
 
-//schema----
+//schema person--------------
 const personSchema = new mongoose.Schema({
-    name: String,
-    number: String,
+    name: {
+      type: String,
+      minlength: 3,
+      required: [true, 'Name is required']
+    },
+    number: {
+      type: String,
+      minlength: [8, 'Phone number must be at least 8 characters long.'],
+      required: [true, 'Phone number is required'],
+      validate: {
+        validator: function(v) {
+          // Regex for valid phone number formats: "DD-DDDDDD" or "DDD-DDDDDDD"
+          return /\d{2,3}-\d{6,}/.test(v); 
+        },
+        message: props => `${props.value} is not a valid phone number! Format must be DD-DDDDDD or DDD-DDDDDDD`
+      }
+    }
   });
 
 //to remove _id obj and _v

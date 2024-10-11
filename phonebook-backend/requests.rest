@@ -10,21 +10,21 @@ POST http://localhost:3001/api/persons/ HTTP/1.1
 content-type: application/json
 
 {
-    "name": "Ahsan",
-    "number": "123456"
+    "name": "Ebraam",
+    "number": "12-345678"
 }
 
 ###
-DELETE http://localhost:3001/api/persons/67085258c2a85bd542cf5e89
+DELETE http://localhost:3001/api/persons/67085298c2a85bd542cf5e90
 
 ###
-PUT http://localhost:3001/api/persons/6708507338f7da1a47a36d0b
+PUT http://localhost:3001/api/persons/67094674aa55b1bc5f1d77e7
 content-type: application/json
 
 {
 
-  "name": "Ahsan",
-  "number": "1234568999"
+  "name": "Nazm",
+  "number": "123-4568999"
 }
 
 

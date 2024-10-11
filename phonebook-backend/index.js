@@ -24,12 +24,15 @@ const requestLogger = (request, response, next) => {
   
   app.use(requestLogger)//using request logger middleware
   
-  //-------
+  //-------Custom Error Handler for CastError, Validation Errors
   const errorHandler = (error, request, response, next) => {
     console.error(error.message)
+  
     if (error.name === 'CastError') {
       return response.status(400).send({ error: 'malformatted id' })
-    } 
+    } else if (error.name === 'ValidationError') {
+      return response.status(400).json({ error: error.message })
+    }
     next(error)
   }
   
@@ -157,38 +160,51 @@ app.delete('/api/persons/:id', (request, response, next) => {
 
 app.put('/api/persons/:id', (request, response, next) => {
     const { name, number } = request.body;
-    if (!name || !number) {
-      return response.status(400).json({ error: 'name or number missing' });
-    }
-    const updatedPerson = { name, number };
   
-    // Options to return the updated document
-    Person.findByIdAndUpdate(request.params.id,updatedPerson,{ new: true})
+    // Check that the request includes both name and number
+    if (!name || !number) {
+      return response.status(400).json({ error: 'Name or number missing' });
+    }
+  
+    Person.findByIdAndUpdate(
+      request.params.id,
+      { name, number },
+      { new: true, runValidators: true, context: 'query' } 
+    )
       .then(updatedPerson => {
+        if (updatedPerson) {
           response.json(updatedPerson);
+        } else {
+          response.status(404).json({ error: 'Person not found' });
+        }
       })
-      .catch(error => next(error));
+      .catch(error => next(error)); 
   });
+  
   
 
 //#################### POST to Mongo###############
 
-app.post('/api/persons', (request, response) => {
-    const body = request.body;
+app.post('/api/persons', (request, response, next) => {
+    const { name, number } = request.body;
   
-    if (!body.name || !body.number) {
+    // Basic validation for name and number
+    if (!name || !number) {
       return response.status(400).json({ error: 'name or number missing' });
     }
-  
     const person = new Person({
-      name: body.name,
-      number: body.number,
+      name,
+      number,
     });
   
     person.save().then(savedPerson => {
-      response.json(savedPerson);
-    });
+        response.json(savedPerson);
+      })
+      .catch(error => {
+        next(error); 
+      });
   });
+  
 
 
 // app.post('/api/persons', (req, res) => {
